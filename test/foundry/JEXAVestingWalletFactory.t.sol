@@ -847,7 +847,8 @@ contract JEXAVestingWalletFactoryTest is TestHelperOz5 {
         vm.deal(address(this), ethAmount);
 
         vm.expectRevert(JEXAVestingWallet.OnlyJEXATokenSupported.selector);
-        (bool _success,) = parentWallet.call{value: ethAmount}("");
+        (bool success,) = parentWallet.call{value: ethAmount}("");
+        assertTrue(success);
 
         // Verify no ETH was received
         assertEq(parentWallet.balance, 0, "Wallet should not receive ETH");
@@ -911,7 +912,8 @@ contract JEXAVestingWalletFactoryTest is TestHelperOz5 {
 
         // Test 1: Direct call with value
         vm.expectRevert(JEXAVestingWallet.OnlyJEXATokenSupported.selector);
-        (bool _success,) = parentWallet.call{value: ethAmount}("");
+        (bool success,) = parentWallet.call{value: ethAmount}("");
+        assertTrue(success);
 
         // Test 2: Transfer function
         vm.expectRevert(JEXAVestingWallet.OnlyJEXATokenSupported.selector);
@@ -919,7 +921,8 @@ contract JEXAVestingWalletFactoryTest is TestHelperOz5 {
 
         // Test 3: Send function
         vm.expectRevert(JEXAVestingWallet.OnlyJEXATokenSupported.selector);
-        bool _sendSuccess = payable(parentWallet).send(ethAmount);
+        bool sendSuccess = payable(parentWallet).send(ethAmount);
+        assertTrue(sendSuccess);
 
         // Verify wallet has no ETH balance
         assertEq(parentWallet.balance, 0, "Wallet should have 0 ETH balance");
