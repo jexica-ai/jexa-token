@@ -626,72 +626,71 @@ contract JEXAVestingWalletFactoryTest is TestHelperOz5 {
         // Create wallet with 1M tokens
         vm.startPrank(user1);
         jexaToken.approve(address(factory), amount);
-        address parentWallet = factory.createVestingWallet(beneficiary1, startTime, duration, amount);
+        JEXAVestingWallet parentWallet =
+            JEXAVestingWallet(payable(factory.createVestingWallet(beneficiary1, startTime, duration, amount)));
         vm.stopPrank();
+
+        assertEq(jexaToken.balanceOf(beneficiary1), 0, "Beneficiary should have 0 tokens initially");
 
         // Move to 25% vesting completion
         vm.warp(startTime + duration / 4);
 
         // At 25%, should be able to release 250k tokens
-        uint256 releasable25 = JEXAVestingWallet(payable(parentWallet)).releasable(address(jexaToken));
+        uint256 releasable25 = parentWallet.releasable(address(jexaToken));
         assertEq(releasable25, 250_000e18, "Should be 250k at 25% completion");
-
-        // Release the 250k tokens
-        vm.prank(beneficiary1);
-        JEXAVestingWallet(payable(parentWallet)).release(address(jexaToken));
 
         // Spawn 300k tokens to another wallet
         vm.prank(beneficiary1);
-        JEXAVestingWallet(payable(parentWallet)).spawnWallet(
-            beneficiary2, startTime + duration / 4 + 1 days, duration, 300_000e18
-        );
+        parentWallet.spawnWallet(beneficiary2, startTime + duration / 4 + 1 days, duration, 300_000e18);
+        // Spawn automatically releases vested tokens
+        assertEq(jexaToken.balanceOf(beneficiary1), 250_000e18, "Beneficiary should have 250k after first release");
 
         // Move to 50% vesting completion
         vm.warp(startTime + duration / 2);
 
         // Verify totalSpawnedAmount is tracked correctly
-        assertEq(JEXAVestingWallet(payable(parentWallet)).totalSpawnedAmount(), 300_000e18);
+        assertEq(parentWallet.totalSpawnedAmount(), 300_000e18);
 
         // At 50%, total vested should be 500k of original 1M
-        // But 300k was spawned, so available for this wallet: 500k - 300k = 200k
-        // Already released: 250k, so releasable should be: max(200k - 250k, 0) = 0
-        uint256 releasable50 = JEXAVestingWallet(payable(parentWallet)).releasable(address(jexaToken));
-        assertEq(releasable50, 0, "Should be 0 since spawned amount reduces available vesting");
+        // Spawning doesn't affect vesting schedule, only wallet balance
+        // Already released: 250k, so releasable should be: 500k - 250k = 250k
+        uint256 releasable50 = parentWallet.releasable(address(jexaToken));
+        assertEq(releasable50, 250_000e18, "Should be able to release additional 250k at 50% completion");
 
-        // No additional release possible at this point
-        // vm.prank(beneficiary1);
-        // JEXAVestingWallet(payable(parentWallet)).release(address(jexaToken));
+        // Release the additional 250k
+        vm.prank(beneficiary1);
+        parentWallet.release(address(jexaToken));
+
+        assertEq(jexaToken.balanceOf(beneficiary1), 500_000e18, "Beneficiary should have 500k after two releases");
 
         // Move to 75% vesting completion
         vm.warp(startTime + (duration * 3) / 4);
 
         // At 75%, total vested should be 750k of original 1M
-        // Available for this wallet: 750k - 300k spawned = 450k
-        // Already released: 250k, so releasable should be: 450k - 250k = 200k
-        uint256 releasable75 = JEXAVestingWallet(payable(parentWallet)).releasable(address(jexaToken));
+        // Already released: 500k (250k + 250k), so releasable should be: 750k - 500k = 250k
+        // But wallet only has 700k remaining (1M - 300k spawned), so limited to min(250k, 200k) = 200k
+        uint256 releasable75 = parentWallet.releasable(address(jexaToken));
         assertEq(releasable75, 200_000e18, "Should be able to release 200k at 75% completion");
 
         // Release the 200k
         vm.prank(beneficiary1);
-        JEXAVestingWallet(payable(parentWallet)).release(address(jexaToken));
+        parentWallet.release(address(jexaToken));
+
+        assertEq(jexaToken.balanceOf(beneficiary1), 700_000e18, "Beneficiary should have 700k after three releases");
 
         // Move to 100% vesting completion
         vm.warp(startTime + duration);
 
         // At 100%, total vested should be 1M of original 1M
-        // Available for this wallet: 1M - 300k spawned = 700k
-        // Already released: 250k + 200k = 450k, so releasable should be: 700k - 450k = 250k
-        uint256 releasable100 = JEXAVestingWallet(payable(parentWallet)).releasable(address(jexaToken));
-        assertEq(releasable100, 250_000e18, "Should be able to release 250k at 100% completion");
-
-        // Release the final 250k
-        vm.prank(beneficiary1);
-        JEXAVestingWallet(payable(parentWallet)).release(address(jexaToken));
+        // Already released: 700k (250k + 250k + 200k), available for this wallet: 1M - 300k spawned = 700k
+        // Since 700k already released equals the 700k available, releasable should be 0
+        uint256 releasable100 = parentWallet.releasable(address(jexaToken));
+        assertEq(releasable100, 0, "Everything should be already released - 700k released + 300k spawned = 1M original");
 
         // Verify the calculation: current balance + released + spawned = original allocation
-        uint256 currentBalance = jexaToken.balanceOf(parentWallet);
-        uint256 totalReleased = JEXAVestingWallet(payable(parentWallet)).released(address(jexaToken));
-        uint256 totalSpawned = JEXAVestingWallet(payable(parentWallet)).totalSpawnedAmount();
+        uint256 currentBalance = jexaToken.balanceOf(address(parentWallet));
+        uint256 totalReleased = parentWallet.released(address(jexaToken));
+        uint256 totalSpawned = parentWallet.totalSpawnedAmount();
 
         assertEq(currentBalance, 0, "Current balance should be 0 after all releases");
         assertEq(totalReleased, 700_000e18, "Total released should be 700k (250k + 200k + 250k)");
@@ -926,5 +925,86 @@ contract JEXAVestingWalletFactoryTest is TestHelperOz5 {
 
         // Verify wallet has no ETH balance
         assertEq(parentWallet.balance, 0, "Wallet should have 0 ETH balance");
+    }
+
+    // ===== PESSIMISTIC.IO AUDIT TESTS =====
+
+    function testSpawnWalletM01() public {
+        // Imagine 1M tokens vesting over 2 years
+        vm.startPrank(user1);
+        uint256 vestedAmount = 1_000_000e18;
+        jexaToken.approve(address(factory), vestedAmount);
+        JEXAVestingWallet parentWallet =
+            JEXAVestingWallet(payable(factory.createVestingWallet(beneficiary1, startTime, 730 days, vestedAmount)));
+        vm.stopPrank();
+        assertEq(jexaToken.balanceOf(beneficiary1), 0, "Beneficiary should have 0 tokens initially");
+
+        // The original wallet spawns a new wallet with 500K, which starts vesting after one year
+        vm.prank(beneficiary1);
+        JEXAVestingWallet spawnedWallet = JEXAVestingWallet(
+            payable(parentWallet.spawnWallet(beneficiary2, startTime + 365 days, 730 days, 500_000e18))
+        );
+
+        // Move to 1 year after the start time
+        vm.warp(startTime + 365 days);
+
+        // At this point, the original wallet should have 500K tokens vested
+        assertEq(
+            parentWallet.releasable(address(jexaToken)), 500_000e18, "Original wallet should have 500K tokens vested"
+        );
+
+        // The spawned wallet should have 0 tokens vested
+        assertEq(spawnedWallet.releasable(address(jexaToken)), 0, "Spawned wallet should have 0 tokens vested");
+
+        // Move to 2 years after the start time
+        vm.warp(startTime + 730 days);
+
+        // At this point, the original wallet should have 500K tokens vested
+        assertEq(
+            parentWallet.releasable(address(jexaToken)), 500_000e18, "Original wallet should have 500K tokens vested"
+        );
+
+        // The spawned wallet should have 250K tokens vested
+        assertEq(
+            spawnedWallet.releasable(address(jexaToken)), 250_000e18, "Spawned wallet should have 250K tokens vested"
+        );
+
+        // Move to 3 years after the start time
+        vm.warp(startTime + 1095 days);
+
+        // At this point, the original wallet should have 500K tokens vested
+        assertEq(
+            parentWallet.releasable(address(jexaToken)), 500_000e18, "Original wallet should have 500K tokens vested"
+        );
+
+        // The spawned wallet should have 500K tokens vested
+        assertEq(
+            spawnedWallet.releasable(address(jexaToken)), 500_000e18, "Spawned wallet should have 500K tokens vested"
+        );
+    }
+
+    function testSpawnWalletL01() public {
+        // 1. A wallet is created with 1M tokens vesting over 2 years.
+        vm.startPrank(user1);
+        uint256 vestedAmount = 1_000_000e18;
+        jexaToken.approve(address(factory), vestedAmount);
+        JEXAVestingWallet parentWallet =
+            JEXAVestingWallet(payable(factory.createVestingWallet(beneficiary1, startTime, 730 days, vestedAmount)));
+        vm.stopPrank();
+
+        // 2. After 1 year, 500K tokens are vested based on the schedule.
+        vm.warp(startTime + 365 days);
+        assertEq(
+            parentWallet.releasable(address(jexaToken)), 500_000e18, "Original wallet should have 500K tokens vested"
+        );
+
+        // 3. The owner spawns a child wallet with 400K tokens.
+        vm.prank(beneficiary1);
+        JEXAVestingWallet spawnedWallet = JEXAVestingWallet(
+            payable(parentWallet.spawnWallet(beneficiary2, startTime + 365 days, 730 days, 400_000e18))
+        );
+
+        // The original wallet should have 500K tokens vested
+        assertEq(parentWallet.vestedAmount(address(jexaToken), uint64(block.timestamp)), 500_000e18);
     }
 }

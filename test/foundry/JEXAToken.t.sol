@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 // Mock imports
 import {OFTMock} from "../mocks/OFTMock.sol";
-import {ERC20Mock} from "../mocks/ERC20Mock.sol";
 import {OFTComposerMock} from "../mocks/OFTComposerMock.sol";
 
 // OApp imports
@@ -13,16 +12,9 @@ import {
 import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
 
 // OFT imports
-import {IOFT, SendParam, OFTReceipt} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
+import {SendParam, OFTReceipt} from "@layerzerolabs/oft-evm/contracts/interfaces/IOFT.sol";
 import {MessagingFee, MessagingReceipt} from "@layerzerolabs/oft-evm/contracts/OFTCore.sol";
-import {OFTMsgCodec} from "@layerzerolabs/oft-evm/contracts/libs/OFTMsgCodec.sol";
 import {OFTComposeMsgCodec} from "@layerzerolabs/oft-evm/contracts/libs/OFTComposeMsgCodec.sol";
-
-// OZ imports
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-
-// Forge imports
-import "forge-std/console.sol";
 
 // DevTools imports
 import {TestHelperOz5} from "@layerzerolabs/test-devtools-evm-foundry/contracts/TestHelperOz5.sol";

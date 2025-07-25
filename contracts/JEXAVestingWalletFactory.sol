@@ -73,9 +73,6 @@ contract JEXAVestingWalletFactory is IJEXAVestingWalletFactory {
     /// @notice Error thrown when amount is zero
     error AmountIsZero();
 
-    /// @notice Error thrown when caller is not authorized
-    error NotAuthorized();
-
     /// @notice Error thrown when invalid ERC20 interface
     error InvalidERC20Interface();
 

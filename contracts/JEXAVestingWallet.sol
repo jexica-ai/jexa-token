@@ -166,24 +166,20 @@ contract JEXAVestingWallet is VestingWallet {
         uint256 currentBalance = JEXA_TOKEN.balanceOf(address(this));
         uint256 alreadyReleased = released(token);
 
-        // CRITICAL CALCULATION: Reconstruct original allocation
-        // Formula: currentBalance + alreadyReleased + totalSpawned = originalAllocation
-        // This ensures we can always calculate correct vesting even after spawning tokens
-        uint256 originalAllocation = currentBalance + alreadyReleased + cachedTotalSpawned;
+        // Vested amount cannot be greater than totalVestedCap:
+        // Past (alreadyReleased) and future (currentBalance) amounts dedicated to the beneficiary
+        uint256 totalVestedCap = alreadyReleased + currentBalance;
 
-        // Calculate total vested amount based on original allocation and vesting schedule
+        // Reconstruct original allocation to keep original vesting speed
+        uint256 originalAllocation = totalVestedCap + cachedTotalSpawned;
         uint256 totalVested = _vestingSchedule(originalAllocation, timestamp);
 
-        // SPAWNING ADJUSTMENT: Subtract spawned amounts from total vested
-        // Why: Spawned tokens are vesting in other wallets, so they don't belong to this wallet
-        // Example: If 1M original, 600k vested, 300k spawned → this wallet gets 300k vested
-        if (totalVested > cachedTotalSpawned) {
-            return totalVested - cachedTotalSpawned;
-        } else {
-            // Edge case: If total spawned exceeds vested, this wallet gets nothing
-            // This can happen early in vesting when little has vested but tokens were spawned
-            return 0;
-        }
+        // Return whichever is smaller: (a) the amount that should have vested according to
+        // the original vesting schedule, and (b) the maximum this wallet can ever own
+        // (already released + current balance). This prevents the wallet from claiming
+        // tokens that have been moved to spawned child wallets while maintaining the original
+        // vesting speed.
+        return totalVested > totalVestedCap ? totalVestedCap : totalVested;
     }
 
     /// @notice Override native token vestedAmount function to disable ETH processing
@@ -191,29 +187,6 @@ contract JEXAVestingWallet is VestingWallet {
     /// @return Always returns 0 as ETH operations are disabled
     function vestedAmount(uint64 /* timestamp */ ) public view virtual override returns (uint256) {
         return 0; // ETH operations disabled
-    }
-
-    /// @notice Override releasable to prevent underflow using totalSpawnedAmount calculations
-    /// @dev Optimized to avoid duplicate storage reads from vestedAmount call
-    function releasable(address token) public view virtual override returns (uint256) {
-        require(token == address(JEXA_TOKEN), OnlyJEXATokenSupported());
-
-        // Cache storage reads to minimize gas usage
-        uint256 cachedTotalSpawned = totalSpawnedAmount;
-        uint256 currentBalance = JEXA_TOKEN.balanceOf(address(this));
-        uint256 alreadyReleased = released(token);
-
-        // Reconstruct original allocation (same calculation as vestedAmount)
-        uint256 originalAllocation = currentBalance + alreadyReleased + cachedTotalSpawned;
-
-        // Calculate total vested amount based on original allocation and current timestamp
-        uint256 totalVested = _vestingSchedule(originalAllocation, uint64(block.timestamp));
-
-        // Calculate vested amount for this wallet (excluding spawned amounts)
-        uint256 vested = totalVested > cachedTotalSpawned ? totalVested - cachedTotalSpawned : 0;
-
-        // Safe subtraction to prevent underflow
-        return vested > alreadyReleased ? vested - alreadyReleased : 0;
     }
 
     /// @notice Override native token releasable function to disable ETH processing
