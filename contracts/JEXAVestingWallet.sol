@@ -68,9 +68,6 @@ contract JEXAVestingWallet is VestingWallet {
     /// @notice Error thrown when only JEXA token is supported
     error OnlyJEXATokenSupported();
 
-    /// @notice Error thrown when wallet creation fails
-    error WalletNotCreated();
-
     /// @notice Constructor sets the JEXA token address, factory address, and initializes vesting
     /// @param _JEXAToken The address of the JEXA token contract
     /// @param _beneficiary The beneficiary of the vesting wallet
