@@ -14,7 +14,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 ///         position by future dates (`splitByDates`) or by amounts
 ///         (`splitByAmounts`), and to extend the vesting period (`setEndDate`).
 ///         Metadata for every token is served off-chain at
-///         https://jexica.ai/vesting/{tokenId}/metadata.json so that wallets
+///         https://vesting.jexica.ai/api/nft-metadata/{token-id} so that wallets
 ///         and marketplaces can present the vesting schedule to users.
 ///
 contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
