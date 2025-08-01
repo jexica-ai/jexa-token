@@ -261,7 +261,8 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
 
         uint256 nextId = _nextId;
         for (uint256 i = 0; i < intervalCount; ++i) {
-            uint64 intervalStart = timestamps[i];
+            // Use scheduleStart for the first slice, otherwise use the provided timestamp
+            uint64 intervalStart = (i == 0 ? scheduleStart : timestamps[i]);
             uint64 intervalEnd = timestamps[i + 1];
             uint64 intervalDuration = intervalEnd - intervalStart; // > 0 ensured above
 
