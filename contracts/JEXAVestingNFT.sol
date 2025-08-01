@@ -106,16 +106,17 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
     error InvalidAmounts();
     /// @notice Thrown when the new end date is too early
     error NewEndTooEarly();
+    /// @notice Thrown when the caller is not the owner
+    error OnlyOwner();
 
     /* ---------------------------------------------------------------------
                                   Modifier
     --------------------------------------------------------------------- */
 
-    /// @notice Modifier to check if the caller is the owner or approved
+    /// @notice Modifier to check if the caller is the owner
     /// @param tokenId The ID of the vesting NFT
-    modifier onlyApprovedOrOwner(uint256 tokenId) {
-        _requireOwned(tokenId);
-        _checkAuthorized(_ownerOf(tokenId), msg.sender, tokenId);
+    modifier onlyOwner(uint256 tokenId) {
+        if (_requireOwned(tokenId) != msg.sender) revert OnlyOwner();
         _;
     }
 
@@ -169,7 +170,7 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
 
     /// @notice Releases all claimable tokens to the current owner.
     /// @param tokenId The ID of the vesting NFT
-    function release(uint256 tokenId) public onlyApprovedOrOwner(tokenId) {
+    function release(uint256 tokenId) public onlyOwner(tokenId) {
         uint256 toRelease = _release(tokenId);
         require(toRelease > 0, NothingToRelease());
     }
@@ -218,7 +219,7 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
     function splitByDates(uint256 tokenId, uint64[] calldata timestamps)
         external
         nonReentrant
-        onlyApprovedOrOwner(tokenId)
+        onlyOwner(tokenId)
         returns (uint256[] memory newTokenIds)
     {
         // Must specify at least two timestamps to form one interval
@@ -312,7 +313,7 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
     function splitByShares(uint256 tokenId, uint32[] calldata shares)
         external
         nonReentrant
-        onlyApprovedOrOwner(tokenId)
+        onlyOwner(tokenId)
         returns (uint256[] memory newTokenIds)
     {
         require(shares.length >= 2, InvalidAmounts());
@@ -383,7 +384,7 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
     function splitByAmounts(uint256 tokenId, uint256[] calldata amounts)
         external
         nonReentrant
-        onlyApprovedOrOwner(tokenId)
+        onlyOwner(tokenId)
         returns (uint256[] memory newTokenIds)
     {
         require(amounts.length >= 2, InvalidAmounts());
@@ -440,7 +441,7 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
     ///         far as the current end. All vested tokens are released first.
     /// @param tokenId The ID of the vesting NFT
     /// @param newEnd Timestamp of the new vesting end (>= startTime + duration).
-    function setEndDate(uint256 tokenId, uint64 newEnd) external nonReentrant onlyApprovedOrOwner(tokenId) {
+    function setEndDate(uint256 tokenId, uint64 newEnd) external nonReentrant onlyOwner(tokenId) {
         _release(tokenId);
 
         VestingPosition storage vp = _vesting[tokenId];
