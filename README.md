@@ -12,7 +12,8 @@ JEXA is deployed as a LayerZero OFT across Ethereum, Arbitrum, and Base at launc
 
 - **Minimum Guaranteed Utility**: Unlock access to a personalized web dashboard and Telegram chatbot that interpret market data and assist with trading decisions in real time.
 - **Future Utilities**: As the platform evolves, new features and premium services (analytics modules, signal alerts, governance access) will be added.
-- **Standards**: ERC-20 with EIP-2612 permit support and LayerZero OFT v2 for seamless cross-chain transfers.
+- **Standards**: ERC-20 with EIP-2612 permit support and [LayerZero OFT v2](https://layerzero.network/) for seamless cross-chain transfers.
+- **Inspired by cross-chain token examples**: See [USDT0](https://usdt0.to/) by Tether and [USDe](https://ethena.fi) by Ethena which use the same backbone technology (LayerZero OFT v2).
 - **Total Supply**: 1,000,000,000 JEXA minted at genesis.
 
 ## Liquidity & Token Distribution
