@@ -459,17 +459,15 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
 
     /// @notice Returns full vesting information for a given tokenId.
     /// @param tokenId The ID of the vesting NFT
-    /// @return The vesting information for the given tokenId
+    /// @return The vesting information for the given tokenId (publicly viewable)
     function vestingInfo(uint256 tokenId) external view returns (VestingPosition memory) {
-        _requireOwned(tokenId);
         return _vesting[tokenId];
     }
 
     /// @notice Amount of tokens already vested at current block timestamp.
     /// @param tokenId The ID of the vesting NFT
-    /// @return The amount of tokens that have vested at the current block timestamp
+    /// @return The amount of tokens that have vested at the current block timestamp (publicly viewable)
     function vestedAmount(uint256 tokenId) public view returns (uint256) {
-        _requireOwned(tokenId);
         VestingPosition memory vp = _vesting[tokenId];
         if (block.timestamp < vp.startTime) return 0;
         if (block.timestamp >= vp.startTime + vp.duration) return vp.amount;
