@@ -14,6 +14,7 @@ import { HardhatUserConfig, HttpNetworkAccountsUserConfig } from 'hardhat/types'
 import { EndpointId } from '@layerzerolabs/lz-definitions'
 
 import './tasks/sendOFT'
+import './tasks/mintVesting'
 
 // Set your preferred authentication method
 //
@@ -50,6 +51,7 @@ const config: HardhatUserConfig = {
                         runs: 200,
                     },
                     viaIR: true,
+                    evmVersion: 'cancun',
                 },
             },
         ],

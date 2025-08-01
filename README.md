@@ -1,56 +1,58 @@
-# JEXA Token Ecosystem
+# JEXA — Utility Token for Jexica AI Platform
 
-## High level description
+> **Disclaimer:** This document is a working draft. Token metrics, distribution percentages, and supported networks may change until final deployment decisions are made.
 
-JEXA is the native utility token of the Jexica AI ecosystem. It is an Omnichain Fungible Token (OFT) that can move seamlessly across LayerZero-connected chains and incorporates advanced linear vesting mechanics to distribute tokens to contributors in a flexible yet secure way.
+## About Jexica AI
+Jexica AI is an AI-powered navigator for the crypto markets and a trading assistant, available via web interface and Telegram bot. We democratize enterprise-grade data, unique and hard-to-find metrics, and decision support—empowering retail traders with insights (with appropriate disclaimers).
 
-### Token description
+## JEXA Token
+The JEXA token is the native utility and community-building asset of the platform:
 
-* **name**: Jexica AI
-* **symbol**: JEXA
-* **decimals**: 18
-* **totalSupply**: 1 000 000 000 JEXA (minted to the deployer at genesis on mainnet)
-* **extra features**:
-  * Cross-chain transfers via the LayerZero OFT standard.
-  * EIP-2612 `permit` support for gas-less approvals.
-  * Immutable initial supply (no further minting).
-  * Ownable – owner may perform privileged actions:
-    * `setPeer(eid, peer)`: mark a remote OFT instance as a trusted peer on a given chain.
-    * `setDelegate(address)`: designate the LayerZero endpoint delegate allowed to manage protocol-level configuration.
-    * `setMsgInspector(address)`: optionally plug in a contract that can inspect/validate outbound messages before dispatch.
-    * Standard OpenZeppelin `transferOwnership` and `renounceOwnership` utilities.
+JEXA is deployed as a LayerZero OFT across Ethereum, Arbitrum, and Base at launch, enabling seamless cross-chain transfers and unified liquidity management. Future integrations include Solana and TON, with dedicated liquidity pools for more aggressive, community-driven trading.
 
-## Main actors, actions, flows
+- **Minimum Guaranteed Utility**: Unlock access to a personalized web dashboard and Telegram chatbot that interpret market data and assist with trading decisions in real time.
+- **Future Utilities**: As the platform evolves, new features and premium services (analytics modules, signal alerts, governance access) will be added.
+- **Standards**: ERC-20 with EIP-2612 permit support and LayerZero OFT v2 for seamless cross-chain transfers.
+- **Total Supply**: 1,000,000,000 JEXA minted at genesis.
 
-* **Token holders** can transfer JEXA on any supported chain and bridge it to another chain using LayerZero.
-* **Project multisig / Owner** controls the initial supply and can distribute tokens or fund vesting wallets.
-* **Beneficiaries** receive tokens via `JEXAVestingWallet` contracts that release tokens linearly over time.
-* **Vesting wallet owners** can spawn child vesting wallets with the same or stricter vesting schedule to sub-allocate tokens (e.g., to team members or advisors).
-* **`JEXAVestingWalletFactory`** deploys vesting wallets and keeps an on-chain registry of all wallets.
-* **LayerZero endpoints** process omnichain messages that underpin the OFT transfers.
+## Liquidity & Token Distribution
+We prioritize on-chain transparency, audited locking, and sustainable market health across multiple chains:
 
-## Technical details
+- **60% Liquidity Lock**: Token/ETH pools on Ethereum, Arbitrum, and Base (Uniswap v4), zero-fee, low-concentration pools permanently locked and audited to guarantee minimal market depth and fair price discovery.
+- **40% Platform & Community Allocation**:
+  - **10%** Unlocked liquidity for operational expenses, marketing, and cross-exchange market making.
+  - **5%** Linear vesting over 1 year (no cliff) — attracts live investment capital from ecosystem partners, boosting project visibility, fostering strategic integrations, and growing the community.
+  - **10%** Linear vesting over 2 years (6-month cliff) — dedicated to liquidity guarantees in other networks (Arbitrum, Base, Solana, TON...) for fair price discovery and market expansion.
+  - **15%** Linear vesting over 4 years (no cliff) — skin-in-the-game reserves for data partners, LLM providers, and funding early staking programs (4-year cycle aligns with a typical market cycle/Bitcoin halving).
 
-* `JEXAToken` extends LayerZero’s `OFT` and OpenZeppelin’s `ERC20Permit`.
-* Cross-chain messages are routed through LayerZero `EndpointV2`; token balances are reflected on each chain (no burning).
-* Deployment script mints **1 B** JEXA on mainnet (`deploy/JEXAToken.ts`), while testnets start with 0 supply for flexibility.
-* **Vesting system**
-  * `JEXAVestingWallet` inherits OZ `VestingWallet` and supports *spawning* child wallets with identical or harsher vesting terms.
-  * Overrides `vestedAmount` and `releasable` to account for spawned amounts and prevent underflow.
-  * ETH deposits and releases are disabled – the contract only manages JEXA.
-* **Factory**
-  * `JEXAVestingWalletFactory` deploys new wallets and stores their addresses in an `EnumerableSet` for O(1) lookups.
-  * Validates that the provided token’s symbol equals **"JEXA"** before deployment.
-  * Transfers tokens from the creator to the new wallet in a single transaction.
-* **Testing**: The repo contains Hardhat (TypeScript) and Foundry (Solidity) test suites covering the token, vesting logic, and cross-chain flows.
-* **Security**: Uses OZ patterns, immutable variables, strict parameter validation, and `SafeERC20` for transfers.
+Our flexible NFT-based vesting allows slicing and reshaping schedules without violating community unlock promises—ensuring no sudden whale dumps and maintaining trust.
 
-## Deployed contracts
+Planned expansion to Solana and TON will introduce smaller, higher-concentration liquidity pools to support more aggressive trading options for the community.
 
-_To be updated after production deployment_
+## Vesting Mechanism (JEXAVestingNFT)
+Every vesting position is represented by an NFT. Core operations:
 
-| Contract | Network | Address | Notes |
-|----------|---------|---------|-------|
-| `JEXAToken` | TODO(mainnet) | TODO | Omnichain fungible token |
-| `JEXAVestingWalletFactory` | TODO(mainnet) | TODO | Creates vesting wallets |
-| Individual `JEXAVestingWallet` | various | created per beneficiary | Linear vesting |
+1. **mintVesting(start, duration, amount)** — Lock tokens and mint a vesting NFT.
+2. **release(tokenId)** — Withdraw claimable tokens; burns NFT when fully vested.
+3. **splitByDates(tokenId, timestamps[])** — Segment a vesting position by custom dates.
+4. **splitByAmounts(tokenId, amounts[])** — Pre-vesting split by exact amounts.
+5. **splitByShares(tokenId, shares[])** — Proportional split at any time.
+
+Full formal specifications, invariants, and audit checklists are in `AUDITABLE.md`.
+
+## Getting Started
+1. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+2. Run tests:
+   ```bash
+   pnpm test
+   ```
+3. Refer to `AUDITABLE.md` for deployment, configuration, and audit details.
+
+## Contact & Community
+Explore the platform at [jexica.ai](https://jexica.ai) or chat with our trading assistant on Telegram. Contributions, issues, and feature requests are welcome on our GitHub repository.
+
+## Audits
+All completed security audits and review reports are available in the `audits/` directory of this repository.
