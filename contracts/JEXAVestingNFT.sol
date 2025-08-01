@@ -7,6 +7,29 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
+/* =========== JEXA Token — Utility Token for the Jexica AI Ecosystem ==========
+ *
+ * JEXA powers access to the Jexica platform — a cognitive financial assistant
+ * built to help humans make better decisions in an increasingly complex world.
+ *
+ * Jexica is not just another chatbot or dashboard. It is a conversational AI
+ * agent with access to institutional-grade market data, designed to surface
+ * clear, personalized insights in real time — from Telegram to web.
+ *
+ * The JEXA token is used to unlock features, pay for model interactions, and
+ * enable smart alerting and automation within the Jexica environment. It is a
+ * functional token — not speculative — and supports direct interaction between
+ * users and their intelligent agent.
+ * 
+ * Technically, JEXA is an Omnichain Fungible Token (OFT), deployable across
+ * multiple blockchains using LayerZero infrastructure. It is governed by strict
+ * supply rules, transparency, and timelocked controls.
+ *
+ * To learn more about how Jexica works — and how to use JEXA — 
+ *
+ *                           visit: https://jexica.ai
+ */
+
 /// @title JEXAVestingNFT – linear vesting positions represented by ERC-721 tokens
 /// @notice Each NFT locks a fixed amount of JEXA tokens and linearly releases
 ///         them to the current owner during the vesting period. The contract
@@ -495,3 +518,5 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
         return _BASE_URI;
     }
 }
+
+/*  ฅ^•ﻌ•^ฅ */
