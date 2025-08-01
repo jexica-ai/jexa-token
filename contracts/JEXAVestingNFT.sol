@@ -50,7 +50,7 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
     string private constant _EXPECTED_TOKEN_SYMBOL = "JEXA";
 
     /// @notice Base URI for metadata
-    string private constant _BASE_URI = "https://jexica.ai/vesting/";
+    string private constant _BASE_URI = "https://vesting.jexica.ai/api/nft-metadata/";
 
     /* ---------------------------------------------------------------------
                                      Events
@@ -493,13 +493,5 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
     /// @return The base URI for the metadata
     function _baseURI() internal pure override returns (string memory) {
         return _BASE_URI;
-    }
-
-    /// @notice Returns the token URI for a given tokenId
-    /// @param tokenId The ID of the vesting NFT
-    /// @return The token URI for the given tokenId
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        _requireOwned(tokenId);
-        return string.concat(_BASE_URI, tokenId.toString(), "/metadata.json");
     }
 }
