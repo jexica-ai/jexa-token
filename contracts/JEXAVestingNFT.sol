@@ -127,7 +127,7 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
     /// @notice Constructor to initialize the JEXAVestingNFT contract
     /// @param jexaToken The address of the JEXA ERC-20 token that is being vested
     constructor(address jexaToken) ERC721("JEXAVestingNFT", "JEXA-VEST") {
-        require(jexaToken != address(0), ZeroAddress());
+        if (jexaToken == address(0)) revert ZeroAddress();
 
         JEXA_TOKEN = IERC20(jexaToken);
     }
@@ -144,8 +144,8 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
     /// @return tokenId The ID of the minted vesting NFT
     function mintVesting(uint64 startTime, uint64 duration, uint256 amount) external returns (uint256 tokenId) {
         // Checks
-        require(duration > 0, InvalidDuration());
-        require(amount > 0, InvalidAmount());
+        if (duration == 0) revert InvalidDuration();
+        if (amount == 0) revert InvalidAmount();
 
         // Effects
         unchecked {
@@ -172,7 +172,7 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
     /// @param tokenId The ID of the vesting NFT
     function release(uint256 tokenId) public onlyOwner(tokenId) {
         uint256 toRelease = _release(tokenId);
-        require(toRelease > 0, NothingToRelease());
+        if (toRelease == 0) revert NothingToRelease();
     }
 
     /// @notice Internal function to release tokens from a vesting NFT
@@ -223,17 +223,17 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
         returns (uint256[] memory newTokenIds)
     {
         // Must specify at least two timestamps to form one interval
-        require(timestamps.length >= 2, InvalidTimestamps());
+        if (timestamps.length < 2) revert InvalidTimestamps();
         // Strictly increasing order
         for (uint256 i = 1; i < timestamps.length; ++i) {
-            require(timestamps[i] > timestamps[i - 1], InvalidTimestamps());
+            if (timestamps[i] <= timestamps[i - 1]) revert InvalidTimestamps();
         }
 
         // First, release everything vested so far.
         _release(tokenId);
 
         VestingPosition memory vp = _vesting[tokenId];
-        require(vp.amount > 0, NothingToSplit()); // already empty & burned in release()
+        if (vp.amount == 0) revert NothingToSplit(); // already empty & burned in release()
 
         uint64 originalStart = vp.startTime;
         uint64 originalEnd = vp.startTime + vp.duration;
@@ -246,10 +246,10 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
 
         // First timestamp cannot be in the past relative to already vested part
         uint64 minStart = originalStart > uint64(block.timestamp) ? originalStart : uint64(block.timestamp);
-        require(scheduleStart >= minStart, InvalidTimestamps());
+        if (scheduleStart < minStart) revert InvalidTimestamps();
 
         // Last timestamp must not unlock faster than original schedule
-        require(timestamps[timestamps.length - 1] >= originalEnd, InvalidTimestamps());
+        if (timestamps[timestamps.length - 1] < originalEnd) revert InvalidTimestamps();
 
         uint256 intervalCount = timestamps.length - 1;
         newTokenIds = new uint256[](intervalCount);
@@ -316,13 +316,13 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
         onlyOwner(tokenId)
         returns (uint256[] memory newTokenIds)
     {
-        require(shares.length >= 2, InvalidAmounts());
+        if (shares.length < 2) revert InvalidAmounts();
 
         // Validate shares and compute total
         uint256 totalShares;
         unchecked {
             for (uint256 i = 0; i < shares.length; ++i) {
-                require(shares[i] > 0, InvalidAmounts());
+                if (shares[i] == 0) revert InvalidAmounts();
                 totalShares += shares[i];
             }
         }
@@ -331,7 +331,7 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
         _release(tokenId);
 
         VestingPosition memory vp = _vesting[tokenId];
-        require(vp.amount > 0, NothingToSplit());
+        if (vp.amount == 0) revert NothingToSplit();
 
         uint64 newStart = vp.startTime > uint64(block.timestamp) ? vp.startTime : uint64(block.timestamp);
         uint64 newDuration = (vp.startTime + vp.duration) - newStart; // >= 0 ensured
@@ -387,22 +387,22 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
         onlyOwner(tokenId)
         returns (uint256[] memory newTokenIds)
     {
-        require(amounts.length >= 2, InvalidAmounts());
+        if (amounts.length < 2) revert InvalidAmounts();
 
         // Release everything that is already vested.
         _release(tokenId);
 
         VestingPosition memory vp = _vesting[tokenId];
-        require(vp.amount > 0, NothingToSplit());
+        if (vp.amount == 0) revert NothingToSplit();
         // Allow splitting by amounts only if the vesting has not started yet
-        require(vp.startTime > uint64(block.timestamp), InvalidTimestamps());
+        if (vp.startTime <= uint64(block.timestamp)) revert InvalidTimestamps();
 
         uint256 remainingAmount = vp.amount - vp.released;
         uint256 sum;
         for (uint256 i = 0; i < amounts.length; ++i) {
             sum += amounts[i];
         }
-        require(sum == remainingAmount, InvalidAmounts());
+        if (sum != remainingAmount) revert InvalidAmounts();
 
         newTokenIds = new uint256[](amounts.length);
         address owner = ownerOf(tokenId);
@@ -446,7 +446,7 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
 
         VestingPosition storage vp = _vesting[tokenId];
         uint64 currentEnd = vp.startTime + vp.duration;
-        require(newEnd >= currentEnd, NewEndTooEarly());
+        if (newEnd < currentEnd) revert NewEndTooEarly();
 
         vp.duration = newEnd - vp.startTime;
 
