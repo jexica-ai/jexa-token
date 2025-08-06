@@ -399,6 +399,7 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
 
     /// @notice Splits a vesting NFT into multiple ones keeping the same dates
     ///         but distributing the remaining amount as provided in `amounts`.
+    ///         Allows splitting only if the vesting has not started yet.
     /// @dev    `amounts.length >= 2` and their sum must equal the remaining locked
     ///         amount (after releasing vested tokens). The last amount is not
     ///         automatically adjusted – caller must pass exact values.
@@ -412,9 +413,6 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
         returns (uint256[] memory newTokenIds)
     {
         require(amounts.length >= 2, InvalidAmounts());
-
-        // Release everything that is already vested.
-        _release(tokenId);
 
         VestingPosition memory vp = _vesting[tokenId];
         require(vp.amount != 0, NothingToSplit());
