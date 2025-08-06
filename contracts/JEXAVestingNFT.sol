@@ -160,7 +160,7 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
     /// @param amount    Amount of JEXA to lock – must be > 0. It is transferred
     ///                  from the caller to this contract.
     /// @return tokenId The ID of the minted vesting NFT
-    function mintVesting(uint64 startTime, uint64 duration, uint256 amount) external returns (uint256 tokenId) {
+    function mintVesting(uint64 startTime, uint64 duration, uint256 amount) external nonReentrant returns (uint256 tokenId) {
         // Checks
         require(startTime >= block.timestamp, InvalidStartTime());
         require(duration != 0, InvalidDuration());
