@@ -7,8 +7,8 @@ import {JEXAVestingNFT} from "../../contracts/JEXAVestingNFT.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @title Additional coverage tests for JEXAVestingNFT
-/// @notice Focuses on branches that were not hit by the happy-path suite: view helpers,
-///         `setEndDate`, and various custom-error reverts.
+/// @notice Focuses on branches that were not hit by the happy-path suite: view helpers
+///         and various custom-error reverts.
 contract JEXAVestingNFT_Coverage is Test {
     ERC20Mock jexa;
     JEXAVestingNFT vest;
@@ -40,46 +40,6 @@ contract JEXAVestingNFT_Coverage is Test {
 
         string memory expected = string.concat("https://vesting.jexica.ai/api/nft-metadata/", Strings.toString(id));
         assertEq(vest.tokenURI(id), expected, "tokenURI must match hard-coded base URI scheme");
-    }
-
-    /*──────────────────────── setEndDate ────────────────────────────────*/
-
-    function testSetEndDate_ReleasesAndExtends() public {
-        uint64 start = uint64(block.timestamp); // start now
-        uint64 dur = 10 days;
-        uint256 amt = 1_000 ether;
-
-        vm.prank(admin);
-        uint256 id = vest.mintVesting(start, dur, amt);
-
-        // Move half-way through vesting so 50% is claimable
-        vm.warp(start + dur / 2);
-        uint256 balBefore = jexa.balanceOf(admin);
-
-        uint64 newEnd = start + dur + 5 days; // extend by 5 days
-        vm.prank(admin);
-        vest.setEndDate(id, newEnd);
-
-        // 1. Half of the tokens must have been released to owner
-        assertEq(jexa.balanceOf(admin) - balBefore, amt / 2);
-
-        // 2. New duration stored
-        JEXAVestingNFT.VestingPosition memory vp = vest.vestingInfo(id);
-        assertEq(vp.duration, newEnd - start);
-    }
-
-    function testSetEndDate_TooEarlyReverts() public {
-        uint64 start = uint64(block.timestamp + 1 days);
-        uint64 dur = 8 days;
-
-        vm.prank(admin);
-        uint256 id = vest.mintVesting(start, dur, 50 ether);
-
-        // newEnd earlier than original end
-        uint64 tooEarly = start + dur - 1;
-        vm.prank(admin);
-        vm.expectRevert(JEXAVestingNFT.NewEndTooEarly.selector);
-        vest.setEndDate(id, tooEarly);
     }
 
     /*──────────────────────── splitByDates reverts ──────────────────────*/

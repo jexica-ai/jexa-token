@@ -35,7 +35,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 ///         them to the current owner during the vesting period. The contract
 ///         allows an owner to claim unlocked tokens (`release`), split a
 ///         position by future dates (`splitByDates`) or by amounts
-///         (`splitByAmounts`), and to extend the vesting period (`setEndDate`).
+///         (`splitByAmounts`) or by shares (`splitByShares`).
 ///         Metadata for every token is served off-chain at
 ///         https://vesting.jexica.ai/api/nft-metadata/{token-id} so that wallets
 ///         and marketplaces can present the vesting schedule to users.
@@ -100,11 +100,6 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
     /// @param newTokenIds The IDs of the new vesting NFTs
     event VestingNFTSplit(address indexed owner, uint256 indexed originalId, uint256[] newTokenIds);
 
-    /// @notice Emitted when the end date of a vesting NFT is extended
-    /// @param tokenId The ID of the vesting NFT
-    /// @param newEnd The new end date of the vesting NFT
-    event EndDateExtended(uint256 indexed tokenId, uint64 newEnd);
-
     /* ---------------------------------------------------------------------
                                    Errors
     --------------------------------------------------------------------- */
@@ -129,8 +124,6 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
     error InvalidDuration();
     /// @notice Thrown when invalid amounts are provided
     error InvalidAmounts();
-    /// @notice Thrown when the new end date is too early
-    error NewEndTooEarly();
     /// @notice Thrown when the caller is not the owner
     error OnlyOwner();
 
@@ -455,26 +448,6 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
 
         _nextId = nextId;
         emit VestingNFTSplit(owner, tokenId, newTokenIds);
-    }
-
-    /* ---------------------------------------------------------------------
-                              Extending vesting
-    --------------------------------------------------------------------- */
-
-    /// @notice Extends the vesting end date. The new end must be at least as
-    ///         far as the current end. All vested tokens are released first.
-    /// @param tokenId The ID of the vesting NFT
-    /// @param newEnd Timestamp of the new vesting end (>= startTime + duration).
-    function setEndDate(uint256 tokenId, uint64 newEnd) external nonReentrant onlyOwner(tokenId) {
-        _release(tokenId);
-
-        VestingPosition storage vp = _vesting[tokenId];
-        uint64 currentEnd = vp.startTime + vp.duration;
-        require(newEnd >= currentEnd, NewEndTooEarly());
-
-        vp.duration = newEnd - vp.startTime;
-
-        emit EndDateExtended(tokenId, newEnd);
     }
 
     /* ---------------------------------------------------------------------
