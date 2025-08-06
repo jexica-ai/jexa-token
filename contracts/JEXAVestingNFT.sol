@@ -121,6 +121,8 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
     error NothingToSplit();
     /// @notice Thrown when invalid timestamps are provided
     error InvalidTimestamps();
+    /// @notice Throws when an invalid start time is provided
+    error InvalidStartTime();
     /// @notice Thrown when an invalid amount is provided
     error InvalidAmount();
     /// @notice Thrown when an invalid duration is provided
@@ -167,6 +169,7 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
     /// @return tokenId The ID of the minted vesting NFT
     function mintVesting(uint64 startTime, uint64 duration, uint256 amount) external returns (uint256 tokenId) {
         // Checks
+        require(startTime >= block.timestamp, InvalidStartTime());
         require(duration != 0, InvalidDuration());
         require(amount != 0, InvalidAmount());
 
@@ -415,11 +418,10 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
         require(amounts.length >= 2, InvalidAmounts());
 
         VestingPosition memory vp = _vesting[tokenId];
-        require(vp.amount != 0, NothingToSplit());
         // Allow splitting by amounts only if the vesting has not started yet
         require(vp.startTime > uint64(block.timestamp), InvalidTimestamps());
 
-        uint256 remainingAmount = vp.amount - vp.released;
+        uint256 remainingAmount = vp.amount; // vp.released == 0, because vesting has not started yet
         uint256 sum;
         for (uint256 i = 0; i < amounts.length; ++i) {
             sum += amounts[i];

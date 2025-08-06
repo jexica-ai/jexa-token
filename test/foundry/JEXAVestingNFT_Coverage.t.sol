@@ -167,6 +167,12 @@ contract JEXAVestingNFT_Coverage is Test {
         vest.mintVesting(uint64(block.timestamp + 1 days), 1 days, 0);
     }
 
+    function testMintVesting_InvalidStartTimeReverts() public {
+        vm.prank(admin);
+        vm.expectRevert(JEXAVestingNFT.InvalidStartTime.selector);
+        vest.mintVesting(uint64(block.timestamp - 1), 1 days, 1 ether);
+    }
+
     /*──────────────────────── splitByShares reverts ────────────────────*/
 
     function testSplitByShares_LengthAndZeroShareReverts() public {
@@ -304,7 +310,6 @@ contract JEXAVestingNFT_Coverage is Test {
         uint256 amt = 50 ether;
         vm.prank(admin);
         uint256 id = vest.mintVesting(start, dur, amt);
-        address rogue = address(0xB0B);
 
         // view vesting info publicly
         JEXAVestingNFT.VestingPosition memory p = vest.vestingInfo(id);
@@ -324,34 +329,35 @@ contract JEXAVestingNFT_Coverage is Test {
 
     /// @notice Sentinel `_USE_CURRENT_TIMESTAMP` allows splitting after vesting has started
     function testSplitByDates_WithSentinelAfterStarted() public {
-        // Set up a vesting that started 1 day ago, duration 2 days
-        uint64 start = uint64(block.timestamp - 1 days);
+        // Set up a vesting that starts now, duration 2 days
+        uint64 start = uint64(block.timestamp);
         uint64 dur = 2 days;
         uint256 amt = 100 ether;
         vm.prank(admin);
         uint256 id = vest.mintVesting(start, dur, amt);
 
-        // Admin should receive the already vested amount (50 ether)
         uint256 balBefore = jexa.balanceOf(admin);
 
         uint64[] memory ts = new uint64[](2);
         ts[0] = uint64(1438226773); // sentinel = Ethereum genesis
         ts[1] = start + dur;       // original end
 
+        vm.warp(start + 1 days);
         vm.prank(admin);
         uint256[] memory ids = vest.splitByDates(id, ts);
         assertEq(ids.length, 1);
         assertEq(jexa.balanceOf(admin) - balBefore, 50 ether);
 
         JEXAVestingNFT.VestingPosition memory p = vest.vestingInfo(ids[0]);
-        assertEq(p.startTime, uint64(block.timestamp));
+
+        assertEq(uint256(p.startTime), block.timestamp);
         assertEq(p.duration, 1 days);
         assertEq(p.amount, 50 ether);
     }
 
     /*──────────────────────── edge-case splits ─────────────────────────*/
     function testSplitByDates_NothingToSplitReverts() public {
-        uint64 start = uint64(block.timestamp - 2 days);
+        uint64 start = uint64(block.timestamp);
         uint64 dur = 1 days;
         vm.prank(admin);
         uint256 id = vest.mintVesting(start, dur, 10 ether);
@@ -360,13 +366,14 @@ contract JEXAVestingNFT_Coverage is Test {
         uint64[] memory ts = new uint64[](2);
         ts[0] = uint64(block.timestamp);
         ts[1] = uint64(block.timestamp + 1 days);
+        vm.warp(start + 2 days);
         vm.prank(admin);
         vm.expectRevert(JEXAVestingNFT.NothingToSplit.selector);
         vest.splitByDates(id, ts);
     }
 
     function testSplitByShares_NothingToSplitReverts() public {
-        uint64 start = uint64(block.timestamp - 2 days);
+        uint64 start = uint64(block.timestamp);
         uint64 dur = 1 days;
         vm.prank(admin);
         uint256 id = vest.mintVesting(start, dur, 40 ether);
@@ -374,33 +381,21 @@ contract JEXAVestingNFT_Coverage is Test {
         uint32[] memory shares = new uint32[](2);
         shares[0] = 1;
         shares[1] = 1;
+        vm.warp(start + 2 days);
         vm.prank(admin);
         vm.expectRevert(JEXAVestingNFT.NothingToSplit.selector);
         vest.splitByShares(id, shares);
     }
 
-    function testSplitByAmounts_NothingToSplitReverts() public {
-        uint64 start = uint64(block.timestamp - 2 days);
-        uint64 dur = 1 days;
-        vm.prank(admin);
-        uint256 id = vest.mintVesting(start, dur, 30 ether);
-        vm.warp(start + dur + 1);
-        uint256[] memory parts = new uint256[](2);
-        parts[0] = 15 ether;
-        parts[1] = 15 ether;
-        vm.prank(admin);
-        vm.expectRevert(JEXAVestingNFT.NothingToSplit.selector);
-        vest.splitByAmounts(id, parts);
-    }
-
     function testSplitByAmounts_AfterStartedReverts() public {
-        uint64 start = uint64(block.timestamp - 1 days);
+        uint64 start = uint64(block.timestamp);
         uint64 dur = 3 days;
         vm.prank(admin);
         uint256 id = vest.mintVesting(start, dur, 20 ether);
         uint256[] memory parts = new uint256[](2);
         parts[0] = 10 ether;
         parts[1] = 10 ether;
+        vm.warp(start + 1 days);
         vm.prank(admin);
         vm.expectRevert(JEXAVestingNFT.InvalidTimestamps.selector);
         vest.splitByAmounts(id, parts);
