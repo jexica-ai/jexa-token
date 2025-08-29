@@ -40,6 +40,7 @@ if (accounts == null) {
 const config: HardhatUserConfig = {
     paths: {
         cache: 'cache/hardhat',
+        deployments: 'deployments/staging'
     },
     solidity: {
         compilers: [
@@ -59,22 +60,22 @@ const config: HardhatUserConfig = {
     networks: {
         'ethereum': {
             eid: EndpointId.ETHEREUM_V2_MAINNET,
-            url: process.env.RPC_URL_ETHEREUM || "https://ethereum-rpc.publicnode.com",
+            url: "https://gateway.tenderly.co/public/mainnet",
             accounts,
         },
         'arbitrum': {
             eid: EndpointId.ARBITRUM_V2_MAINNET,
-            url: process.env.RPC_URL_ARBITRUM || "https://arbitrum-one-rpc.publicnode.com",
+            url: "https://arbitrum.gateway.tenderly.co",
             accounts,
         },
         'base': {
             eid: EndpointId.BASE_V2_MAINNET,
-            url: process.env.RPC_URL_BASE || "https://base-rpc.publicnode.com",
+            url: "https://mainnet.base.org",
             accounts,
         },
         'bsc': {
             eid: EndpointId.BSC_V2_MAINNET,
-            url: process.env.RPC_URL_BSC || "https://bsc-rpc.publicnode.com",
+            url: "https://bsc-dataseed.bnbchain.org",
             accounts
         },
         hardhat: {

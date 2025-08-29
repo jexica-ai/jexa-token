@@ -1,4 +1,6 @@
+import { keccak256 } from '@layerzerolabs/lz-v2-utilities'
 import assert from 'assert'
+import { toUtf8Bytes } from 'ethers/lib/utils'
 
 import { ethers } from 'hardhat'
 import { type DeployFunction } from 'hardhat-deploy/types'
@@ -34,15 +36,15 @@ const deploy: DeployFunction = async (hre) => {
     // }
     const endpointV2Deployment = await hre.deployments.get('EndpointV2')
 
-    const initialSupply = hre.network.name === 'mainnet' ? ethers.utils.parseEther('1000000000') : 0n
+    const salt = keccak256(toUtf8Bytes('Jexica AI (Staging)'));
 
     const { address } = await deploy(contractName, {
         from: deployer,
         args: [
             endpointV2Deployment.address, // LayerZero's EndpointV2 address
-            deployer, // owner
-            initialSupply,
+            deployer // owner
         ],
+        deterministicDeployment: salt,
         log: true,
         skipIfAlreadyDeployed: false,
     })

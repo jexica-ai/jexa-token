@@ -40,13 +40,15 @@ contract JEXAToken is OFT, ERC20Permit {
      * @dev Constructor to initialize the JEXA token.
      * @param _lzEndpoint The LayerZero endpoint address for cross-chain communication
      * @param _owner The owner of the token contract
-     * @param _initialSupply The initial supply of the token to be minted
      */
-    constructor(address _lzEndpoint, address _owner, uint256 _initialSupply)
-        OFT("Jexica AI", "JEXA", _lzEndpoint, _owner)
+    constructor(address _lzEndpoint, address _owner)
+        OFT("Jexica AI", "JEXA(TEST)", _lzEndpoint, _owner)
         Ownable(_owner)
         ERC20Permit("Jexica AI")
     {
-        _mint(_owner, _initialSupply);
+        if (block.chainid == 1) {
+            // Minting 1B supply only on Ethereum Mainnet
+            _mint(_owner, 1_000_000_000e18);
+        }
     }
 }
