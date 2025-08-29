@@ -93,6 +93,7 @@ export default async function () {
     // Generate the connections config based on the pathways
     const connections = await generateConnectionsConfig(pathways)
     return {
+        deploymentsDir: "deployments/staging",
         contracts: [
             { contract: mainnetContract },
             { contract: arbitrumContract },
