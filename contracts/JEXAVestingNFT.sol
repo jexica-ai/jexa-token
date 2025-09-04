@@ -491,5 +491,3 @@ contract JEXAVestingNFT is ERC721, ReentrancyGuardTransient {
         return _BASE_URI;
     }
 }
-
-/*  ฅ^•ﻌ•^ฅ */
